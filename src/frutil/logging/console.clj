@@ -1,0 +1,1 @@
+(ns frutil.logging.console)
