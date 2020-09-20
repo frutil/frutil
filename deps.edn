@@ -1,4 +1,7 @@
 {:deps {
-        com.brunobonacci/mulog    {:mvn/version "0.4.0"}}
+        com.brunobonacci/mulog {:mvn/version "0.4.0"}
+
+        datascript             {:mvn/version "1.0.1"}
+        metosin/malli          {:mvn/version "0.0.1-20200715.082439-21"}}
 
  :paths ["src"]}
