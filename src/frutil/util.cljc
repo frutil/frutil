@@ -7,7 +7,13 @@
 
 (defn decode-edn
   [s]
-  (when s (read-string s)))
+  (when s
+    (try
+      (read-string s)
+      (catch #?(:cljs :default :clj Exception) ex
+        (throw (ex-info "frutil.util/decode-edn failed"
+                        {:edn s}
+                        ex))))))
 
 
 (defn encode-edn
