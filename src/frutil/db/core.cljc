@@ -7,7 +7,15 @@
    [malli.core :as m]
    [malli.error :as me]
 
+   [frutil.util :as u]
    [frutil.devtools :as dev]))
+
+
+(defonce MODULES (atom {}))
+
+
+(defn reg-module [module]
+  (swap! MODULES assoc (get module :ident) module))
 
 
 (def default-schema
@@ -52,7 +60,9 @@
   (let [
         schema (reduce (fn [schema module]
                          (concat schema (get module :schema)))
-                       schema modules)
+                       schema (-> @MODULES
+                                  (select-keys modules)
+                                  vals))
         schema (concat schema default-schema)
         db (-> (d/empty-db (schema->datascript schema))
                (d/db-with [{:db.root/ident :singleton}])
@@ -61,12 +71,18 @@
      :modules modules}))
 
 
+(defn serializable-value [this]
+  (select-keys this [:db :modules]))
+
+
 (defn tempid [this tempid]
   (get-in this [:tx-report :tempids tempid]))
 
 
 (defn modules [this]
-  (get this :modules))
+  (-> @MODULES
+      (select-keys (get this :modules))
+      vals))
 
 
 (defn entity [this id]
