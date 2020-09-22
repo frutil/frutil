@@ -112,20 +112,30 @@
       first))
 
 
+(defn attribute-is-reverse-ref? [a]
+  (-> a name (.startsWith "_")))
+
+
 (defn attribute-value-type [this a]
   (-> (entity this [:db/ident a])
       :db/valueType))
 
+
 (defn attribute-is-ref? [this a]
-  (= (attribute-value-type this a) :db.type/ref))
+  (if-let [type (attribute-value-type this a)]
+    (= type :db.type/ref)
+    (attribute-is-reverse-ref? a)))
 
 
 (defn attribute-cardinality [this a]
   (-> (entity this [:db/ident a])
       :db/cardinality))
 
+
 (defn attribute-is-many? [this a]
-  (= (attribute-cardinality this a) :db.cardinality/many))
+  (if-let [cardinality (attribute-cardinality this a)]
+    (= cardinality :db.cardinality/many)
+    (attribute-is-reverse-ref? a))) ;; FIXME handle unique attributes
 
 
 (defn transact [this tx-data]
@@ -137,3 +147,25 @@
 
 (defn facts [this e]
   nil)
+
+
+;;; common queries
+
+
+(defn q-ref-attributes-idents [this]
+  (map first
+      (q this
+         '[:find ?a
+           :where
+           [?e :db/ident ?a]
+           [?e :db/valueType :db.type/ref]])))
+
+
+(defn as-reverse-ref-attr [k]
+  (let [ns (namespace k)
+        name (name k)]
+    (keyword ns (str "_" name))))
+
+
+(defn q-reverse-ref-attributes-idents [this]
+  (map as-reverse-ref-attr (q-ref-attributes-idents this)))
