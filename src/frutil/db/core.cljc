@@ -93,6 +93,16 @@
   (d/q query (get this :db)))
 
 
+(defn q-es-wheres
+  "Finds entity ids.
+
+  Example: `(db/q-es-wheres '[?e :db/ident _])`"
+  [this & wheres]
+  (let [query (into '[:find ?e :where ] wheres)]
+    (map first
+         (q this query))))
+
+
 (defn root-id [this]
   (-> this
       (q '[:find ?e
