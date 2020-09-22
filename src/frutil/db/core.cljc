@@ -11,36 +11,11 @@
    [frutil.devtools :as dev]))
 
 
-(defonce MODULES (atom {}))
 
 
-(defn reg-module [module]
-  (swap! MODULES assoc (get module :ident) module))
-
-
-(def default-schema
-  [{:db/ident  :db/ident
-    :db/unique :db.unique/identity}
-
-   {:db/ident       :db.root/ident
-    :db/unique      :db.unique/identity
-    :db/valueType   :db.type/keyword}
-
-   {:db/ident       :db.root/attrs
-    :db/valueType   :db.type/ref
-    :db/cardinality :db.cardinality/many
-    :db/isComponent  true}
-
-   {:db/ident       :db.root/children
-    :db/valueType   :db.type/ref
-    :db/cardinality :db.cardinality/many
-    :db/isComponent  true
-    :db/noHistory    true}])
-
-
-(defn schema->datascript
+(defn datascript-schema-from-entities
   "Converts schema entities into a DataScript schema."
-  [schema]
+  [entities]
   (reduce (fn [dss entity]
             (let [ident (get entity :db/ident)
                   dss (if (= :db.type/ref (get entity :db/type))
@@ -50,25 +25,15 @@
                         (assoc-in dss [ident :db/cardinality] :db.cardinality/many)
                         dss)]
               dss))
-          {} schema))
-
-(comment
-  (schema->datascript default-schema))
+          {} entities))
 
 
-(defn new-db [{:keys [schema modules]}]
+(defn new-db [{:keys [schema]}]
   (let [
-        schema (reduce (fn [schema module]
-                         (concat schema (get module :schema)))
-                       schema (-> @MODULES
-                                  (select-keys modules)
-                                  vals))
-        schema (concat schema default-schema)
-        db (-> (d/empty-db (schema->datascript schema))
-               (d/db-with [{:db.root/ident :singleton}])
+        db (-> (d/empty-db (datascript-schema-from-entities schema))
                (d/db-with schema))]
-    {:db db
-     :modules modules}))
+    {:db db}))
+
 
 
 (defn serializable-value [this]
@@ -79,10 +44,6 @@
   (get-in this [:tx-report :tempids tempid]))
 
 
-(defn modules [this]
-  (-> @MODULES
-      (select-keys (get this :modules))
-      vals))
 
 
 (defn entity [this id]
@@ -101,15 +62,6 @@
   (let [query (into '[:find ?e :where ] wheres)]
     (map first
          (q this query))))
-
-
-(defn root-id [this]
-  (-> this
-      (q '[:find ?e
-            :where
-           [?e :db.root/ident :singleton]])
-      first
-      first))
 
 
 (defn attribute-is-reverse-ref? [a]
