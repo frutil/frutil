@@ -19,6 +19,11 @@
          (q query db))))
 
 
+(defn e-wheres
+  [db & wheres]
+  (first (apply es-wheres (into [db] wheres))))
+
+
 ;;; schema
 
 
@@ -29,28 +34,28 @@
 
 
 (defn attribute-value-type
-  [this a]
-  (-> (entity this [:db/ident a])
+  [db a]
+  (-> (entity db [:db/ident a])
       :db/valueType))
 
 
 (defn attribute-is-ref?
   "returns true if `a` is a reference attribute"
-  [this a]
-  (if-let [type (attribute-value-type this a)]
+  [db a]
+  (if-let [type (attribute-value-type db a)]
     (= type :db.type/ref)
     (attribute-is-reverse-ref? a)))
 
 
-(defn attribute-cardinality [this a]
-  (-> (entity this [:db/ident a])
+(defn attribute-cardinality [db a]
+  (-> (entity db [:db/ident a])
       :db/cardinality))
 
 
 (defn attribute-is-many?
   "returns true if `a` is a cardinality many attribute"
-  [this a]
-  (if-let [cardinality (attribute-cardinality this a)]
+  [db a]
+  (if-let [cardinality (attribute-cardinality db a)]
     (= cardinality :db.cardinality/many)
     (attribute-is-reverse-ref? a))) ;; FIXME handle unique attributes?
 
