@@ -19,6 +19,10 @@
                   dss (if-let [v (get entity :db/unique)]
                         (assoc-in dss [ident :db/unique] v)
                         dss)]
+                  ;; isComponent not supported
+                  ;; dss (if (get entity :db/isComponent)
+                  ;;       (assoc-in dss [ident :db/isComponent] true)
+                  ;;       dss)]
               dss))
           {} entities))
 

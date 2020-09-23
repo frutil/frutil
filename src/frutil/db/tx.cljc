@@ -28,3 +28,9 @@
   [e a old-v new-v]
   [[:db/retract e a old-v]
    [:db/add e a new-v]])
+
+
+(defn retract-fact
+  "returns tx-data for retracting an existing fact"
+  [e a v]
+  [[:db/retract e a v]])
