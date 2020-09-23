@@ -39,7 +39,7 @@
         :db/valueType    :db.type/string}]
       du/new-db-with-schema
       (d/db-with [{:author/name "Hermann Hesse"}
-                  {:book/title  "Siddharta"
+                  {:book/title  "Siddhartha"
                    :book/author [:author/name "Hermann Hesse"]}])))
 
 ;;;

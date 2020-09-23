@@ -32,9 +32,19 @@
 
 ;;;
 
-(s/fdef tx/db-with-component
-  :args (s/cat :db ::db
-               :component ::entity
+(comment
+  (def db (test-db))
+  (tx/add-component {:chapter/title "Siddhartha, der Samana"}
+                    [[[:book/title "Siddhartha"] :book/chapters]])
+  (-> db
+      (d/db-with '[{:db/id -1
+                    :chapter/title "Siddhartha, der Samana"}
+                   [:db/add [:book/title "Siddhartha"] :book/chapters -1]])))
+
+;;;
+
+(s/fdef tx/add-component
+  :args (s/cat :component ::entity
                :parent-eas (s/coll-of (s/cat :e ::e
                                              :a ::a)
                                       :kind vector?)))
@@ -42,10 +52,11 @@
 (defexpect db-with-component-test
   (expect "Siddhartha, der Brahmane"
           (-> (test-db)
-              (tx/db-with-component
-               {:chapter/title "Siddhartha, der Brahmane"}
-               [[[:book/title "Siddharta"] :book/chapters]])
-              (d/entity [:book/title "Siddharta"])
+              (d/db-with
+               (tx/add-component
+                {:chapter/title "Siddhartha, der Brahmane"}
+                [[[:book/title "Siddhartha"] :book/chapters]]))
+              (d/entity [:book/title "Siddhartha"])
               :book/chapters
               first
               :chapter/title)))

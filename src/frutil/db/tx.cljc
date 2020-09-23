@@ -14,14 +14,17 @@
 (def entity q/entity)
 
 
-(defn db-with-component
-  "returns db with the new entity `component` and references to it specified in
-  `parent-eas` as a vector of `[e a]`"
-  [db component parent-eas]
-  (let [component (assoc component :db/id -1)
-        report (with db [component])
-        id (get-in report [:tempids -1])
-        db (get report :db-after)
-        tx-data (into [] (map (fn [[e a]] [:db/add e a id]) parent-eas))]
-    (db-with db tx-data)))
+(defn add-component
+  "returns tx-data for creating a new entity `component` and references to it
+  specified in `parent-eas` as a vector of `[e a]`"
+  [component parent-eas]
+  (into
+   [(assoc component :db/id -1)]
+   (map (fn [[e a]] [:db/add e a -1]) parent-eas)))
 
+
+(defn update-fact
+  "returns tx-data for updating an existing fact"
+  [e a old-v new-v]
+  [[:db/retract e a old-v]
+   [:db/add e a new-v]])
