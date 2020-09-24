@@ -1,0 +1,2 @@
+clj -A:test:test-runner-eftest
+
