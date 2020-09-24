@@ -53,11 +53,28 @@
 
 
 (defn attribute-is-many?
-  "returns true if `a` is a cardinality many attribute"
+  "returns `true` if `a` is a `:db.cardinality/many` attribute"
   [db a]
-  (if-let [cardinality (attribute-cardinality db a)]
-    (= cardinality :db.cardinality/many)
-    (attribute-is-reverse-ref? a))) ;; FIXME handle unique attributes?
+  (let [cardinality (attribute-cardinality db a)]
+    (= cardinality :db.cardinality/many)))
+
+
+(defn attribute-is-component?
+  "returns `true` if `a` is a `:db/isComponent` attribute"
+  [db a]
+  (-> (entity db [:db/ident a])
+      :db/isComponent
+      boolean))
+
+
+(defn attributes-of-entity
+  [entity attribute-entity-predicate]
+  (let [db (datascript/entity-db entity)]
+    (->> entity
+         keys
+         (map #(datascript/entity db [:db/ident %]))
+         (filter attribute-entity-predicate)
+         (map :db/ident))))
 
 
 (defn ref-attributes-idents
@@ -83,3 +100,22 @@
   "returns all reverse reference attributes"
   [db]
   (map as-reverse-ref-attr (ref-attributes-idents db)))
+
+
+;;; components
+
+(defn components-of
+  "returns a set of ids which are the components or components of components
+  of `e`."
+  [db e]
+  (let [entity (datascript/entity db e)]
+    (reduce (fn [ids attr]
+              (reduce (fn [ids component]
+                        (let [component-id (get component :db/id)]
+                          (if (ids component-id)
+                            ids
+                            (-> ids
+                                (conj component-id)
+                                (into (components-of db component-id))))))
+                      ids (get entity attr)))
+            #{} (attributes-of-entity entity :db/isComponent))))

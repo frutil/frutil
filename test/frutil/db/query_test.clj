@@ -1,7 +1,9 @@
 (ns frutil.db.query-test
   (:require
    [clojure.spec.alpha :as s]
-   [clojure.test :refer [are deftest is testing]]
+   [expectations.clojure.test :refer
+    [defexpect expect expecting approximately between between' functionally
+     side-effects]]
    [clojure.spec.test.alpha :as st]
 
    [datascript.core :as d]
@@ -19,6 +21,7 @@
 (defn test-db []
   (-> [;; author
        {:db/ident       :author/name
+        :db/valueType   :db.type/string
         :db/unique      :db.unique/identity}
        {:db/ident       :author/followers
         :db/type        :db.type/ref
@@ -26,7 +29,8 @@
 
        ;; book
        {:db/ident       :book/title
-        :db/unique      :db.unique/identity}
+        :db/unique      :db.unique/identity
+        :db/valueType   :db.type/string}
        {:db/ident       :book/author
         :db/valueType   :db.type/ref}
        {:db/ident       :book/chapters
@@ -36,11 +40,24 @@
 
        ;; chapter
        {:db/ident        :chapter/title
-        :db/valueType    :db.type/string}]
+        :db/valueType    :db.type/string}
+       {:db/ident        :chapter/subchapters
+        :db/valueType    :db.type/ref
+        :db/cardinality  :db.cardinality/many
+        :db/isComponent  true}]
       du/new-db-with-schema
       (d/db-with [{:author/name "Hermann Hesse"}
                   {:book/title  "Siddhartha"
                    :book/author [:author/name "Hermann Hesse"]}])))
+
+
+(defn test-db-with-chapters []
+  (-> (test-db)
+      (d/db-with [{:db/id [:book/title "Siddhartha"]
+                   :book/chapters
+                   [{:chapter/title "Samana"}
+                    {:chapter/title "Brahmane"
+                     :chapter/subchapters [{:chapter/title "Fussnoten"}]}]}])))
 
 ;;;
 
@@ -56,13 +73,11 @@
   :args (s/cat :a keyword?)
   :ret boolean?)
 
-(deftest attribute-is-reverse-ref?-test
-  (are [a] (= true a)
-    (query/attribute-is-reverse-ref? :hello/_world)
-    (query/attribute-is-reverse-ref? :_hello))
-  (are [a] (= false a)
-    (query/attribute-is-reverse-ref? :hello/world)
-    (query/attribute-is-reverse-ref? :hello)))
+(defexpect attribute-is-reverse-ref?-test
+  (expect (query/attribute-is-reverse-ref? :hello/_world))
+  (expect (query/attribute-is-reverse-ref? :_hello))
+  (expect (not (query/attribute-is-reverse-ref? :hello/world)))
+  (expect (not (query/attribute-is-reverse-ref? :hello))))
 
 ;;;
 
@@ -70,11 +85,11 @@
   :args (s/cat :db ::db :a keyword?)
   :ret boolean?)
 
-(deftest attribute-is-ref?-test
+(defexpect attribute-is-ref?-test
   (let [db (test-db)]
-    (is (= true (query/attribute-is-ref? db :book/author)))
-    (is (= true (query/attribute-is-ref? db :book/_author)))
-    (is (= false (query/attribute-is-ref? db :book/title)))))
+    (expect (query/attribute-is-ref? db :book/author))
+    (expect (query/attribute-is-ref? db :book/_author))
+    (expect (not (query/attribute-is-ref? db :book/title)))))
 
 ;;;
 
@@ -82,29 +97,66 @@
   :args (s/cat :db ::db :a keyword?)
   :ret boolean?)
 
-(deftest attribute-is-manyf?-test
+(defexpect attribute-is-manyf?-test
   (let [db (test-db)]
-    (is (= true (query/attribute-is-many? db :author/followers)))
-    (is (= true (query/attribute-is-many? db :book/_author)))
-    (is (= false (query/attribute-is-many? db :book/title)))))
+    (expect (query/attribute-is-many? db :author/followers))
+    (expect (not (query/attribute-is-many? db :book/_author)))
+    (expect (not (query/attribute-is-many? db :book/title)))))
+
+;;;
+
+(s/fdef query/attribute-is-component?
+  :args (s/cat :db ::db :a keyword?)
+  :ret boolean?)
+
+(defexpect attribute-is-componentf?-test
+  (let [db (test-db)]
+    (expect (query/attribute-is-component? db :book/chapters))
+    (expect (not (query/attribute-is-component? db :book/author)))))
 
 ;;;
 
 (s/fdef query/ref-attributes-idents
   :args (s/cat :db ::db))
 
-(deftest ref-attributes-idents-test
+(defexpect ref-attributes-idents-test
   (let [db (test-db)]
-    (is (= #{:book/author :book/chapters} (into #{} (query/ref-attributes-idents db))))))
+    (expect #{:book/author :book/chapters :chapter/subchapters}
+            (into #{} (query/ref-attributes-idents db)))))
 
 ;;;
 
 (s/fdef query/reverse-ref-attributes-idents
   :args (s/cat :db ::db))
 
-(deftest reverse-ref-attributes-idents-test
+(defexpect reverse-ref-attributes-idents-test
   (let [db (test-db)]
-    (is (= #{:book/_author :book/_chapters} (into #{} (query/reverse-ref-attributes-idents db))))))
+    (expect #{:book/_author :book/_chapters :chapter/_subchapters}
+            (into #{} (query/reverse-ref-attributes-idents db)))))
+
+;;;
+
+(defexpect attributes-of-entity-test
+  (let [db (test-db)
+        entity (d/entity db [:book/title "Siddhartha"])]
+    (expect #{:book/title :book/author}
+            (-> entity
+                (query/attributes-of-entity (constantly true))
+                (->> (into #{}))))))
+
+;;;
+
+(defexpect components-of-test
+  (let [db (test-db)]
+    (expect empty? (query/components-of db [:book/title "Siddhartha"])))
+  (let [db (test-db-with-chapters)]
+    (expect #{"Samana"
+              "Brahmane"
+              "Fussnoten"}
+            (->> (query/components-of db [:book/title "Siddhartha"])
+                 (map #(d/entity db %))
+                 (map :chapter/title)
+                 (into #{})))))
 
 ;;;
 
@@ -113,4 +165,18 @@
 ;;;
 
 (comment
-  (def db (test-db)))
+  (def db (test-db))
+  (-> db :schema :book/chapters)
+  (def db (test-db-with-chapters))
+  (-> (test-db-with-chapters)
+      (d/db-with [[:db/retractEntity [:book/title "Siddhartha"]]])
+      (->> (d/q '[:find ?e :where [?e :chapter/title _]])))
+
+  (def db (d/db-with
+           (d/empty-db {:profile {:db/valueType   :db.type/ref
+                                  :db/isComponent true}})
+           [{:db/id 1 :name "Ivan" :profile 3}
+            {:db/id 3 :email "@3"}
+            {:db/id 4 :email "@4"}]))
+
+  (let [db (d/db-with db [[:db/retractEntity 1]])]))
