@@ -1,7 +1,6 @@
 (ns frutil.db.tx-test
   (:require
    [clojure.spec.alpha :as s]
-   [clojure.test :refer [are deftest is testing]]
    [expectations.clojure.test :refer
     [defexpect expect expecting approximately between between' functionally
      side-effects]]
