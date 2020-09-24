@@ -17,7 +17,7 @@
 (defn add-component
   "returns tx-data for creating a new entity `component` and references to it
   specified in `parent-eas` as a vector of `[e a]`"
-  [component parent-eas]
+  [db component parent-eas]
   (into
    [(assoc component :db/id -1)]
    (map (fn [[e a]] [:db/add e a -1]) parent-eas)))
@@ -25,12 +25,14 @@
 
 (defn update-fact
   "returns tx-data for updating an existing fact"
-  [e a old-v new-v]
+  [db e a old-v new-v]
   [[:db/retract e a old-v]
    [:db/add e a new-v]])
 
 
 (defn retract-fact
   "returns tx-data for retracting an existing fact"
-  [e a v]
-  [[:db/retract e a v]])
+  [db e a v]
+  (cond-> [[:db/retract e a v]]
+          (q/attribute-is-component? db a)
+          (conj [:db/retractEntity v])))
