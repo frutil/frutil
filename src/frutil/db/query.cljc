@@ -77,6 +77,15 @@
          (map :db/ident))))
 
 
+(defn attributes-in-schema
+  "returns all attributes defined in the schema"
+  [db]
+  (map first
+       (q '[:find ?a :where [_ :db/ident ?a]]
+          db)))
+
+
+
 (defn ref-attributes-idents
   "returns the `:db/ident` values of all reference attributes"
   [db]

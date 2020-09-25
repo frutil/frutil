@@ -17,15 +17,21 @@
 (defn add-component
   "returns tx-data for creating a new entity `component` and references to it
   specified in `parent-eas` as a vector of `[e a]`"
-  [db component parent-eas]
+  [_db component parent-eas]
   (into
    [(assoc component :db/id -1)]
    (map (fn [[e a]] [:db/add e a -1]) parent-eas)))
 
 
+(defn add-fact
+  "returns tx-data for adding a new fact"
+  [_db e a v]
+  [[:db/add e a v]])
+
+
 (defn update-fact
   "returns tx-data for updating an existing fact"
-  [db e a old-v new-v]
+  [_db e a old-v new-v]
   [[:db/retract e a old-v]
    [:db/add e a new-v]])
 
