@@ -15,7 +15,7 @@
                         dss)
                   dss (if-let [v (get entity :db/cardinality)]
                         (assoc-in dss [ident :db/cardinality] v)
-                        dss)
+                        (assoc-in dss [ident :db/cardinality] :db.cardinality/one))
                   dss (if-let [v (get entity :db/unique)]
                         (assoc-in dss [ident :db/unique] v)
                         dss)
