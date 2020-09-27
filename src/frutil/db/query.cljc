@@ -79,11 +79,13 @@
 
 (defn attributes-in-schema
   "returns all attributes defined in the schema"
-  [db]
-  (map first
-       (q '[:find ?a :where [_ :db/ident ?a]]
-          db)))
-
+  [db filter-f]
+  (->> (q '[:find ?e :where [?e :db/ident _]]
+          db)
+       (map first)
+       (map #(entity db %))
+       (filter filter-f)
+       (map :db/ident)))
 
 
 (defn ref-attributes-idents
