@@ -17,34 +17,33 @@
 (defn add-component
   "returns tx-data for creating a new entity `component` and references to it
   specified in `parent-eas` as a vector of `[e a]`"
-  [_db component parent-eas]
-  (into
-   [(assoc component :db/id -1)]
-   (map (fn [[e a]] [:db/add e a -1]) parent-eas)))
+  [_db component parent-e parent-a]
+  [(assoc component :db/id -1)
+   [:db/add parent-e parent-a -1]])
 
 
 (defn add-fact
-  "returns tx-data for adding a new fact"
-  [_db e a v]
-  [[:db/add e a v]])
+"returns tx-data for adding a new fact"
+[_db e a v]
+[[:db/add e a v]])
 
 
 (defn update-fact
-  "returns tx-data for updating an existing fact"
-  [_db e a old-v new-v]
-  [[:db/retract e a old-v]
-   [:db/add e a new-v]])
+"returns tx-data for updating an existing fact"
+[_db e a old-v new-v]
+[[:db/retract e a old-v]
+[:db/add e a new-v]])
 
 
 (defn retract-fact
-  "returns tx-data for retracting an existing fact"
-  [db e a v]
-  (cond-> [[:db/retract e a v]]
-          (q/attribute-is-component? db a)
-          (conj [:db/retractEntity v])))
+"returns tx-data for retracting an existing fact"
+[db e a v]
+(cond-> [[:db/retract e a v]]
+(q/attribute-is-component? db a)
+(conj [:db/retractEntity v])))
 
 
 (defn retract-entity
-  "returns tx-data for retracting an existing entity"
-  [db e]
-  [[:db/retractEntity e]])
+"returns tx-data for retracting an existing entity"
+[db e]
+[[:db/retractEntity e]])
