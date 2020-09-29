@@ -42,3 +42,9 @@
   (cond-> [[:db/retract e a v]]
           (q/attribute-is-component? db a)
           (conj [:db/retractEntity v])))
+
+
+(defn retract-entity
+  "returns tx-data for retracting an existing entity"
+  [db e]
+  [[:db/retractEntity e]])
