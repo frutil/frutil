@@ -1,15 +1,30 @@
 (ns frutil.ego.core
   (:require
-   [frutil.ego.db :as db]))
+   [frutil.ego.db :as db]
+   [frutil.ego.schema :as schema]))
+
+
+
+
+(defn with-initialized-schema
+  [db]
+  (-> db
+      (schema/with-entity {:ego.entity/ident :ego.root})
+      :db-after
+      (schema/with-entity {:ego.entity/ident :ego.entity})
+      :db-after
+      (schema/with-entity {:ego.entity/ident :ego.attr})))
 
 
 (defn new-db [opts]
-  (db/new-db))
+  (-> (db/new-db)
+      with-initialized-schema
+      :db-after))
 
 
-;;; commands
+(comment
+  (def db (new-db {})))
 
-(defn with-entity [db uid parent-id parent-attr])
 
 ;;; tasks
 

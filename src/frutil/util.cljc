@@ -5,6 +5,15 @@
    [#?(:cljs cljs.reader :clj clojure.edn) :refer [read-string]]))
 
 
+(defn sget
+  "Safe `get`. Throws exception if value is missing."
+  [m k]
+  (if-let [v (get m k)]
+    v
+    (throw (ex-info (str "Map is missing `" k "`")
+                    {:m m :k k}))))
+
+
 (defn decode-edn
   [s]
   (when s

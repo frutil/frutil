@@ -4,9 +4,7 @@
    ;; straw man for some standardization:
    {clojure.string str}}
 
-  :single-key-in {:level :warning}
-
-  :unsorted-required-namespaces {:level :error}}
+  :single-key-in {:level :warning}}
 
  :lint-as
  {expectations.clojure.test/defexpect clojure.test/deftest,
