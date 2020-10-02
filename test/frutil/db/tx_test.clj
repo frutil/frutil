@@ -77,5 +77,11 @@
 
 (comment
   (def db (test-db))
+
+  (d/with db [{:db/id -1}])
+
+  (d/with db [{:db/id -1} [:db/add 1 :book/chapters -1]])
+                                        ;(tx/add-component db {} [:book/title "Siddhartha"] :book/chapters))
+
   (-> db
       (d/with [{:db/id -1}])))
